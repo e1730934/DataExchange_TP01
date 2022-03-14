@@ -1,0 +1,425 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Service de données pour l'application SCHOOL
+paths:
+  /auth/create-token:
+    post:
+      summary: Route pour créer un jeton d'authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenCreationPayload'
+      responses:
+        '200':
+          description: La réponse lorsque le jeton est créé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenCreationResponse'
+        '401':
+          description: Non authorizé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenCreationError'
+  /auth/register/:
+    post:
+      summary: Route pour créer un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreationPayload'
+      responses:
+        '201':
+          description: La réponse lorsque l'utilisateur est créé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreationResponse'
+  /users/{userId}:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Retourne les informations d'un utilisateur
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'utilisateur
+      responses:
+        '200':
+          description: L'utilisateur existe
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/User'
+        '404':
+          description: L'utilisateur n'existe pas
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/NotFound'
+  /students:
+    get:
+      security:
+        - bearerAuth: []
+      description: Cette route retourne les informations de l'ensemble des étudiants
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: Si ce paramètre est renseigné, une recherche selon le nom ou prénom sera faite.
+      responses:
+        '200':
+          description: La liste est retournée
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'  
+    post:
+      security:
+        - bearerAuth: []
+      description: Route pour créer un étudiant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Student'
+      responses:
+        '201':
+          description: La réponse lorsque l'étudiant est créé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studentId: 
+                    type: number
+        '400':
+          description: Un étudiant existe déjà avec ce courriel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string
+  /students/{studentId}:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Cette route retourne les informations d'un étudiant.
+      parameters:
+        - in: path
+          name: studentId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'étudiant
+      responses:
+        '200':
+          description: L'étudiant existe et est retourné dans la réponse
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - student
+                properties:
+                  student:
+                    $ref: '#/components/schemas/Student'
+        '404':
+          description: L'étudiant n'existe pas
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/NotFound'
+    put:
+      security:
+        - bearerAuth: []
+      description: Route pour modifier un étudiant
+      parameters:
+        - in: path
+          name: studentId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'étudiant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Student'
+      responses:
+        '200':
+          description: La réponse lorsque l'étudiant est modifié.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modified: 
+                    type: boolean
+        '400':
+          description: Un étudiant existe déjà avec ce courriel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string
+    delete:
+      security:
+        - bearerAuth: []
+      description: Route pour supprimer un étudiant de la BD
+      parameters:
+        - in: path
+          name: studentId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'étudiant
+      responses:
+        '200':
+          description: La réponse lorsque l'étudiant est supprimé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: 
+                    type: boolean
+        '400':
+          description: Impossible de supprimer (soit l'étudiant n'existe pas ou soit il existe des résultats)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string
+  /students/{studentId}/results:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Cette route retourne toutes les notes d'un étudiant (notes d'une évaluation)
+      parameters:
+        - in: path
+          name: studentId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'étudiant        
+      responses:
+        '200':
+          description: L'étudiant existe et ses notes sont renvoyées
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    note:
+                      type: number
+                    evaluation:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                        name:
+                          type: string
+        '404':
+          description: L'étudiant n'existe pas
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/NotFound'
+  /students/{studentId}/evaluations/{evaluationId}/result:
+    put:
+      security:
+        - bearerAuth: []
+      summary: Pour modifier la note d'une évaluation d'un étudiant spécifique.
+      parameters:
+        - in: path
+          name: studentId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'étudiant
+        - in: path
+          name: evaluationId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'évaluation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - note
+              properties:
+                note:
+                  type: integer
+      responses:
+        '200':
+          description: La note a été changé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modified: 
+                    type: boolean
+        '404':
+          description: Élément non trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string
+    delete:
+      security:
+        - bearerAuth: []
+      description: Pour effacer un résultat pour un étudiant spécifique
+      parameters:
+        - in: path
+          name: studentId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'étudiant
+        - in: path
+          name: evaluationId
+          schema:
+            type: integer
+          required: true
+          description: Le ID de l'évaluation
+      responses:
+        '200':
+          description: Le résultat a été supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: 
+                    type: boolean
+        '404':
+          description: Élément non trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string    
+components:
+  securitySchemes:
+     bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes 
+  schemas:
+    TokenCreationPayload:
+      type: object
+      required:
+        - password
+        - email
+      properties:
+        password: 
+          type: string
+        email: 
+          type: string
+    TokenCreationResponse:
+      type: object
+      required:
+        - token
+      properties: 
+        token: 
+          type: string
+    TokenCreationError:
+      type: object
+      required:
+        - message
+      properties:
+        message: 
+          type: string
+    UserCreationPayload:
+      type: object
+      required:
+        - password
+        - email
+        - name
+      properties:
+        password: 
+          type: string
+        email: 
+          type: string
+        name:
+          type: string
+    UserCreationResponse:
+      type: object
+      required:
+        - email
+        - name
+      properties:
+        email: 
+          type: string
+        name:
+          type: string
+    User:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          type: object
+          required:
+            - name
+            - email
+            - id
+          properties:            
+            name:
+              type: string
+            id:
+              type: number
+            email:
+              type: string
+    Student:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+      properties:
+        firstName: 
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string 
+    NotFound:
+      type: object
+      properties:
+        status:
+          type: string
