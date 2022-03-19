@@ -16,7 +16,6 @@ const secret = 'dgjkgevuyetggvdghdfhegchgjdg,dvbmdghkdvghmdvhmshmg';
 router.post('/create-token/', async (request, response) => {
   // 1. la requête va comporter deux paramtères importants: identifiant (email) + mot de passe
   const { email, password } = request.body;
-
   // 2. Est-ce que l'utilisateur existe?
   const user = await db('users').where('email', email).first();
   if (!user) {
@@ -46,15 +45,29 @@ router.post('/register/', async (request, response) => {
 
   const hashedPassword = await bcrypt.hash(password, 8);
 
-  const query = db('users').insert({
-    password: hashedPassword,
-    email,
-    name,
-  }).toString();
-
+  const query = db('users')
+    .insert({
+      password: hashedPassword,
+      email,
+      name,
+    })
+    .toString();
+  await db('users')
+    .insert({
+      password: hashedPassword,
+      email,
+      name,
+    });
+  const infoUsers = await db('users')
+    .select('id', 'name', 'email')
+    .where(email)
+    .where('password', hashedPassword);
   console.log('La requête SQL est:', query);
-
-  response.status(201).json({ email, name });
+  const expiresIn = 24 * 60 * 60;
+  const accessToken = jwt.sign({ id: infoUsers[0].id }, process.env.TOKEN_KEY, {
+    expiresIn,
+  });
+  response.status(201).json({ email, name, accessToken });
 });
 
 /*
