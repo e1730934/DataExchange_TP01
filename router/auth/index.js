@@ -59,15 +59,18 @@ router.post('/register/', async (request, response) => {
       name,
     });
   const infoUsers = await db('users')
-    .select('id', 'name', 'email')
-    .where(email)
+    .select('id', 'name', 'email', 'dob')
+    .where('email', email)
     .where('password', hashedPassword);
   console.log('La requête SQL est:', query);
   const expiresIn = 24 * 60 * 60;
-  const accessToken = jwt.sign({ id: infoUsers[0].id }, process.env.TOKEN_KEY, {
+  const accessToken = jwt.sign({ id: infoUsers[0].id }, secret, {
     expiresIn,
   });
-  response.status(201).json({ email, name, accessToken });
+  const { dob } = infoUsers[0];
+  response.status(201).json({
+    email, name, dob, accessToken,
+  });
 });
 
 /*
